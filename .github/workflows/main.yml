@@ -1,0 +1,30 @@
+name: 학부공지 확인
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests beautifulsoup4
+      - name: 새 공지 확인
+        env:
+          NOTICE_URL: https://lis.cau.ac.kr/02_notice/notice_01a.php
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python check_notice.py
+      - name: 확인한 글 목록 저장
+        run: |
+          git config user.name "notice-bot"
+          git config user.email "notice-bot@users.noreply.github.com"
+          git add seen.json
+          git diff --cached --quiet || (git commit -m "공지 목록 갱신" && git push)
